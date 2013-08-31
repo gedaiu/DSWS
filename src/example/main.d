@@ -18,10 +18,32 @@ along with DSWS.  If not, see <http://www.gnu.org/licenses/>.
 import std.stdio, std.string, std.regex;
 import core.thread;
 
-import sws.webServer;
+import sws.webServer, sws.webRequest;
 
+class DemoServer : WebServer {
+	
+	this() {
+		super();
+		setPort(8080);
+	}
+	
+	/**
+	 * Implementing the method that process the requests
+	 *
+	 */
+	override bool processRequest(WebRequest request) {
+		
+		request.sendText("Demo page");
+		request.flush();
+		
+		return true;
+	}
+}
 
-void main() {
+void main() { 
+	DemoServer myServer = new DemoServer();
+	
+	myServer.start();
 	
 	readln;
 	writeln("Done!!!");
