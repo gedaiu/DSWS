@@ -1,0 +1,14 @@
+-od"bin"
+-of"bin/DSWS"
+
+-I"src"
+
+"src/example/main.d"
+"src/simpleWebServer/WebClient.d"
+"src/simpleWebServer/WebParser.d"
+"src/simpleWebServer/WebParserFormData.d"
+"src/simpleWebServer/WebParserHeader.d"
+"src/simpleWebServer/WebParserMultipart.d"
+"src/simpleWebServer/WebRequest.d"
+"src/simpleWebServer/WebServer.d"
+
