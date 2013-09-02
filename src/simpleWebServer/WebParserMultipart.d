@@ -137,7 +137,7 @@ class WebParserMultipart : WebParser {
 		
 		auto varList = data.split("; ");
 		
-		for(int i=0; i<varList.length; i++) {
+		foreach( i ; 0..varList.length) {
 			auto pos = varList[i].indexOf("=");
 			
 			if(pos == -1) {

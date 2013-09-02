@@ -122,7 +122,7 @@ class WebClient : Thread {
 						if("Cookie" in r.requestHeader) {
 							auto cookieList = r.requestHeader["Cookie"].split("; ");
 						
-							for(int i=0; i<cookieList.length; i++) {
+							foreach(i ; 0 .. cookieList.length) { 
 								string msg = to!string(cookieList[i]);
 						    	
 						    	pos = msg.indexOf("=");
@@ -151,7 +151,7 @@ class WebClient : Thread {
 									contentParser = new WebParserMultipart();
 									
 									auto options = r.requestHeader["Content-Type"].split("; ");
-									for(int i =0; i<options.length; i++) {
+									foreach( i ; 0 .. options.length) {
 										string msg = options[i];
 										
 										if(msg.indexOf("=") != -1) {
@@ -184,7 +184,7 @@ class WebClient : Thread {
 						
 						r.post = contentParser.get();
 						
-						for(int i=0;i<contentParser.files.length; i++) {
+						foreach( i ; 0 .. contentParser.files.length ) {
 							r.files[contentParser.files[i]] = contentParser.files[i];
 						}
 						
@@ -201,7 +201,7 @@ class WebClient : Thread {
 					
 					//remove files 
 					if(contentParser !is null) {
-						for(int i=0;i<contentParser.files.length; i++) {
+						foreach( i ; 0..contentParser.files.length) {
 							try {
 								remove(cast(const(char*)) contentParser.files[i]);
 							} catch (Exception e) {

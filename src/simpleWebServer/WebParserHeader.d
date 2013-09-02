@@ -54,7 +54,7 @@ class WebParserHeader : WebParser {
 	    parsedData[""] = messages[0];
 	    
 	    //parse headers
-	    for(int i=1; i<messages.length; i++) {
+	    foreach(i ; 1..messages.length) {
 	    	string msg = to!string(messages[i]);
 	    	
 	    	pos = msg.indexOf(": ");

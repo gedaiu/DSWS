@@ -36,7 +36,7 @@ class WebParserFormData : WebParser {
 		string getList[] = data.split("&");
 		
 		//parse every variable
-		for(int i=0; i<getList.length; i++) {
+		foreach(i; 0..getList.length) {
 			string msg = to!string(getList[i]);
 	    	
 	    	//look for '='
