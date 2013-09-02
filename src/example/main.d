@@ -19,7 +19,7 @@ import std.stdio, std.string, std.regex;
 import core.thread;
 
 import sws.webServer, sws.webRequest;
-
+ 
 class DemoServer : WebServer {
 	
 	this() {
@@ -34,17 +34,34 @@ class DemoServer : WebServer {
 	override bool processRequest(WebRequest request) {
 		
 		request.sendText("Demo page");
-		request.flush();
-		
+		request.flush;
 		return true;
 	}
 }
 
 void main() { 
+	
+	//create the webserver with delegates
+	
+	auto dg = delegate(WebRequest request) {
+		
+		request.sendText("Demo page");
+		request.flush;
+		
+		return true;
+	};
+	
+	WebServer delegateServer = new WebServer(dg);
+	delegateServer.setPort(8080);
+	
+	//or extend the base web server
 	DemoServer myServer = new DemoServer();
 	
+	//start the server
 	myServer.start();
 	
+	//wait the user input and stop the server
 	readln;
+	myServer.stop();
 	writeln("Done!!!");
 }      

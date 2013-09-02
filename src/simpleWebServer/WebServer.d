@@ -39,10 +39,17 @@ class WebServer : Thread {
 	protected ushort port;
 	public bool listening;
 	
+	protected bool delegate(WebRequest request) pRequest = null;
+	
 	this() { 
 		setPort(80);
 		listener = new TcpSocket;
 		super(&run);
+	}
+	
+	this(bool delegate(WebRequest request) dg) {
+		this();
+		pRequest = dg;
 	} 
 	
 	/**
@@ -50,7 +57,14 @@ class WebServer : Thread {
 	 * 
 	 * @return bool return true if the process is a success 
 	 */
-	abstract bool processRequest(WebRequest request);
+	public bool processRequest(WebRequest request) {
+		
+		if(pRequest !is null) {
+			return pRequest(request);
+		} 
+		
+		return false;
+	}
 	
 	/**
 	 * Set the listening port

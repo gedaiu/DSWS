@@ -137,7 +137,7 @@ class WebRequest {
 			".jpg": "image/jpeg",
 			".jpg": "image/pjpeg",
 			".jps": "image/x-jps",
-			".png": "image/png",
+			".png": "image/png"
 		];
 	}
 	
