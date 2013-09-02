@@ -36,7 +36,6 @@ class WebRequest {
 	public string[string] cookie;
 	public string[string] get;
 	public string[string] post;
-	public string[string] footer;
 	public string[string] files;
 	public string[string] headers;
 	public Variant[string][string] data;
@@ -464,7 +463,12 @@ class WebRequest {
   		return true;
 	}
 	
-	
+	/**
+	 * Get values from the request header
+	 *
+	 * @param string header name
+	 * @return header value
+	 */
 	string getHeader(string name) {
 		if(name in requestHeader) {
 			return requestHeader[name];
@@ -473,6 +477,12 @@ class WebRequest {
 		return "";
 	}
 	
+	/**
+	 * Get cookie value
+	 *
+	 * @param string cookie name
+	 * @return cookie value
+	 */
 	string getCookie(string name) {
 		if(name in cookie) {
 			return cookie[name];
@@ -481,6 +491,12 @@ class WebRequest {
 		return "";
 	}
 	
+	/**
+	 * Get value from the url string
+	 *
+	 * @param string variable name
+	 * @return variable value
+	 */
 	string getGet(string name) { 
 		if(name in get) {
 			return get[name];
@@ -489,6 +505,12 @@ class WebRequest {
 		return "";
 	}
 	
+	/**
+	 * Get post value
+	 *
+	 * @param string post variable name
+	 * @return post value
+	 */
 	string getPost(string name) {
 		if(name in post) {
 			return post[name];
@@ -497,14 +519,12 @@ class WebRequest {
 		return "";
 	}
 	
-	string getFooter(string name) {
-		if(name in footer) {
-			return footer[name];
-		}
-		
-		return "";
-	}
-	
+	/**
+	 * Get uploaded file path
+	 *
+	 * @param string file name variable
+	 * @return string file path
+	 */
 	string getFiles(string name) {
 		if(name in files) {
 			return files[name];

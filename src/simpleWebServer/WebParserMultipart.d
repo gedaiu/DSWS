@@ -132,6 +132,13 @@ class WebParserMultipart : WebParser {
 		return true;
 	}
 	  
+  
+	/**
+	 * Parse content-disposition message
+	 *  
+	 * @param string data
+	 * @return string[string] associative array with the parsed data
+	 */
 	private string[string] parseDisposition(string data) {
 		string[string] vars;
 		
