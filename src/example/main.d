@@ -32,7 +32,6 @@ class DemoServer : WebServer {
 	 *
 	 */
 	override bool processRequest(WebRequest request) {
-		
 		request.sendText("Demo page");
 		request.flush;
 		return true;

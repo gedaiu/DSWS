@@ -532,11 +532,4 @@ class WebRequest {
 		
 		return "";
 	}
-	
-	/**
-	 * Destroy the request
-	 */
-	~this() {
-		writeln("del req");
-	}
 }

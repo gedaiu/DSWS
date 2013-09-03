@@ -40,17 +40,6 @@ class WebClient : Thread {
 		currSock = sock;
 		myServer = server;
 		super(&run); 
-		
-		writeln("run client");
-	}
-	
-	/**
-	 * Close the socket
-	 */
-	~this() {
-		
-		writeln("end client");
-		currSock.close;
 	}
 	
 	/**
