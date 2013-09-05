@@ -3,6 +3,7 @@
 
 -I"src"
 
+"src/example/demo.d"
 "src/example/main.d"
 "src/simpleWebServer/WebClient.d"
 "src/simpleWebServer/WebParser.d"

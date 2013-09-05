@@ -29,6 +29,7 @@ class WebParserMultipart : WebParser {
 	private bool getContent;
 	private bool isFile;
 	private bool isVariable;
+	private int nlCount;
 	
 	protected string type;
 	protected string[string] disposition;
@@ -51,7 +52,7 @@ class WebParserMultipart : WebParser {
 	 override public bool parse() {
 	 	
 	 	if(boundary == "" && "boundary" in settings) {
-	 		boundary = "--" ~ settings["boundary"] ~ separator;
+	 		boundary = "--" ~ settings["boundary"];
  		}
 	 	
 	 	if(data.length < boundary.length) {
@@ -69,12 +70,11 @@ class WebParserMultipart : WebParser {
  				//if we found the boundary, we start a new variable
  				auto boundaryPos = data.indexOf(boundary);
  				
- 				parseVariable(strip(data[0 .. boundaryPos]));
+ 				parseVariable(data[0 .. boundaryPos]);
  				
  				//remove all the data before the boundary and the boundary itself from the buffer
  				data = data[boundaryPos + boundary.length .. $];
- 				
- 								
+ 					
 				//we prepare to read a new variable
 				getContent = false;
 				
@@ -86,12 +86,13 @@ class WebParserMultipart : WebParser {
 				disposition = null;
 				isFile = false;
 				isVariable = false;
+				nlCount = 0;
  			} else {
  				
  				if(data.length >= boundary.length * 2) {
  					long ret = parseVariable(data[0 .. boundary.length]);
 	 				
-	 				if(ret) {
+	 				if(ret>0) {
 	 					data = data[ret..$];
  					}
  				} 
@@ -105,12 +106,11 @@ class WebParserMultipart : WebParser {
 		return true;
 	}
 	
-	/**
+	/** 
 	 *
 	 */
 	private long parseVariable(string data) {
-		
-	 	long originalLen = data.length;
+		long originalLen = data.length;
 	 	
 		string oldData = "";
 		
@@ -163,6 +163,10 @@ class WebParserMultipart : WebParser {
 			 		
 		    	} else {
 		    		if(msg.strip() == "") {
+		    			nlCount++;
+	    			}
+		    		
+		    		if(nlCount == 2) {
 		    			//if we found an empty line
 		    			getContent = true;
 		    			

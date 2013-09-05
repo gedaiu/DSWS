@@ -151,7 +151,7 @@ class WebClient : Thread {
 									
 									contentParser.settings["path"] = r.server.getTempFilePath;
 											
-									parseAtTheEnd = false;
+									parseAtTheEnd = true;
 								}
 							}
 						} else {
