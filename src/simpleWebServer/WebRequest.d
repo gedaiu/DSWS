@@ -222,14 +222,25 @@ class WebRequest {
 	} 
 	
 	/**
-	  * Get data from request
+	  * Get data from request 
 	  *
 	  * @param string moduleName
 	  * @param string variableName
 	  * @return Variant
 	  */
 	Variant getData(string moduleName, string variableName) {
-		synchronized { 
+		synchronized {
+			
+			if(moduleName !in data) {
+				Variant v = "";
+				return v;
+			}
+			
+			if(variableName !in data[moduleName]) {
+				Variant v = "";
+				return v; 
+			}
+			
 			return data[moduleName][variableName];
 		}
 	} 
