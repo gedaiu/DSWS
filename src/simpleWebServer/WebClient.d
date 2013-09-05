@@ -151,7 +151,7 @@ class WebClient : Thread {
 									
 									contentParser.settings["path"] = r.server.getTempFilePath;
 											
-									parseAtTheEnd = true;
+									parseAtTheEnd = false;
 								}
 							}
 						} else {
@@ -194,7 +194,7 @@ class WebClient : Thread {
 							try {
 								remove(cast(const(char*)) contentParser.files[i]);
 							} catch (Exception e) {
-								writeln(e.msg);
+								writeln(e);
 							}
 						}
 					}
@@ -209,7 +209,7 @@ class WebClient : Thread {
 			//close the connection
 			currSock.close;
 		} catch(Exception e) {
-			writeln(e.msg);
+			writeln(e);
 			stdout.flush;
 		} 
 		

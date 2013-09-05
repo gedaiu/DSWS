@@ -28,15 +28,19 @@ class WebParserMultipart : WebParser {
 	public string separator;
 	private bool getContent;
 	private bool isFile;
+	private bool isVariable;
 	
 	protected string type;
 	protected string[string] disposition;
 	protected File *f;
 	
 	this() {
-		getContent = false;
+		getContent = true;
 		separator = "\r\n";
 		files = [];
+		
+		isFile = false;
+		isVariable = false;
 	}
 	
 	/**
@@ -47,30 +51,106 @@ class WebParserMultipart : WebParser {
 	 override public bool parse() {
 	 	
 	 	if(boundary == "" && "boundary" in settings) {
-	 		boundary = settings["boundary"];
+	 		boundary = "--" ~ settings["boundary"] ~ separator;
  		}
 	 	
-	 	if(data.length <= boundary.length) {
+	 	if(data.length < boundary.length) {
 	 		return false;
  		}
-
- 		string tsep = "\r\n--" ~ boundary ~ "\r\n";
- 		while(data.length >= tsep.length) {
-			if(!getContent) {
-			 	long pos = data.indexOf(separator);
-			 	
-			 	int add = 3;
-			 	
+ 		
+ 		//parse data
+ 		string oldData = "";
+ 		
+ 		while(data != oldData) {
+ 			oldData = data;
+ 				 		
+ 			//search for boundary
+ 			if(data.indexOf(boundary) > -1) {
+ 				//if we found the boundary, we start a new variable
+ 				auto boundaryPos = data.indexOf(boundary);
+ 				
+ 				parseVariable(strip(data[0 .. boundaryPos]));
+ 				
+ 				//remove all the data before the boundary and the boundary itself from the buffer
+ 				data = data[boundaryPos + boundary.length .. $];
+ 				
+ 								
+				//we prepare to read a new variable
+				getContent = false;
+				
+				if(isFile) {
+					f.close;
+				}
+				
+				type = "";
+				disposition = null;
+				isFile = false;
+				isVariable = false;
+ 			} else {
+ 				
+ 				if(data.length >= boundary.length * 2) {
+ 					long ret = parseVariable(data[0 .. boundary.length]);
+	 				
+	 				if(ret) {
+	 					data = data[ret..$];
+ 					}
+ 				} 
+ 				
+ 				return false;
+			}
+ 		}
+ 		
+ 		stdout.flush;
+ 		
+		return true;
+	}
+	
+	/**
+	 *
+	 */
+	private long parseVariable(string data) {
+		
+	 	long originalLen = data.length;
+	 	
+		string oldData = "";
+		
+		while(data != oldData) {
+			oldData = data;
+			
+			if(getContent && (isFile || isVariable)) {
+				if(disposition is null) {
+					return originalLen;
+				}
+		
+				//write data in variable
+				//get the position of the first separator
+				
+				//save message
+				if(isFile) {
+					f.rawWrite(data);
+				} 
+				
+				if(isVariable) {
+					parsedData[disposition["name"]] ~= data;
+				}
+				
+				data = "";
+			} else {
+				//read the variable header
+				long pos = data.indexOf(separator); //find the separator
+		 					 	
 			 	if(pos == -1) {
-			    	return false;
+			    	return originalLen - data.length;
 		    	}
 			 	
 			 	string msg = data[0..pos];
-			 	data = data[pos+separator.length..$];
+			 	data = data[pos + separator.length..$];
 			 	
-			 	pos = msg.indexOf(": ");
+				pos = msg.indexOf(": ");
 			 	
+			 	//if is the variable header
 			 	if(pos != -1) {
+			 		//if we found a variable
 			 		auto variable = msg.split(": ");
 			 		
 			 		if(variable[0] == "Content-Disposition") {
@@ -83,10 +163,12 @@ class WebParserMultipart : WebParser {
 			 		
 		    	} else {
 		    		if(msg.strip() == "") {
+		    			//if we found an empty line
 		    			getContent = true;
 		    			
 		    			if("filename" in disposition) {
 		    				isFile = true;
+		    				isVariable = false;
 		    				
 		    				string file = settings["path"] ~ disposition["filename"];
 		    				f = new File(file, "w");
@@ -95,44 +177,16 @@ class WebParserMultipart : WebParser {
 		    			} else {
 		    				parsedData[disposition["name"]] = "";
 		    				isFile = false;
+		    				isVariable = true;
 	    				}
 	    			}
 	    		}
-			 	
-			} else {
-				//we found a boundary
-				if(data[0..tsep.length] == tsep) {
-					getContent = false;
-					
-					if(data[0..tsep.length] == tsep) {
-						data = data[tsep.length .. $];
-					}
-					
-					if(isFile) {
-						f.close;
-					}
-					
-					type = "";
-					disposition = null;
-				} else {
-					string msg = to!string(data[0]);
-					data = data[1..$];
-					
-					if(isFile) {
-						f.rawWrite(msg);
-					} else {
-						parsedData[disposition["name"]] ~= msg;
-					}
-				} 
 			}
 		}
- 		
- 		stdout.flush;
- 		
-		return true;
+		
+		return originalLen - data.length;
 	}
-	  
-  
+	
 	/**
 	 * Parse content-disposition message
 	 *  

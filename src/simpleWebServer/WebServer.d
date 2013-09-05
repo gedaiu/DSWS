@@ -144,7 +144,7 @@ class WebServer : Thread {
 				listener.close;
 			}
 		} catch(Exception e) {
-			writeln(e.msg);
+			writeln(e);
 		}
 		
 		listening = false;
