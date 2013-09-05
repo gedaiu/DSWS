@@ -82,6 +82,14 @@ class WebParserMultipart : WebParser {
 					f.close;
 				}
 				
+				if(disposition !is null) {
+					auto lastSeparatorPos = parsedData[disposition["name"]].lastIndexOf(separator);
+					
+					if(lastSeparatorPos == parsedData[disposition["name"]].length - 2) {
+						parsedData[disposition["name"]] = parsedData[disposition["name"]][0..lastSeparatorPos];
+					}
+				}
+				
 				type = "";
 				disposition = null;
 				isFile = false;
