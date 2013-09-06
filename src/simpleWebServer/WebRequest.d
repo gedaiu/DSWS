@@ -430,7 +430,7 @@ class WebRequest {
 		//add the cookies
 		string glue = "";
 		foreach(string key, string value; cookie) {
-			headers["Set-Cookie"] = glue ~ key ~ "=" ~ value;
+			headers["Set-Cookie"] ~= glue ~ key ~ "=" ~ value;
 			glue = "; ";
 		}
 		
