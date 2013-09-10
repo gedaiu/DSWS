@@ -19,72 +19,72 @@ There are two ways to use the server:
 
 1. Extending the WebServer class
 	
-	import sws.webServer, sws.webRequest;
+		import sws.webServer, sws.webRequest;
 
-	class DemoServer : WebServer {
-	
-		this() {
-			super();
-			setPort(8080);
-		}
+		class DemoServer : WebServer {
 		
-		/**
-		 * Implementing the method that process the HTTP
-		 * requests
-		 *
-		 */
-		override bool processRequest(WebRequest request) {
-			request.sendText("Demo page");
-			request.flush;
-			return true;
+			this() {
+				super();
+				setPort(8080);
+			}
+			
+			/**
+			 * Implementing the method that process the HTTP
+			 * requests
+			 *
+			 */
+			override bool processRequest(WebRequest request) {
+				request.sendText("Demo page");
+				request.flush;
+				return true;
+			}
+
+			/**
+			 * Implementing the method that process the
+			 * websocket messages
+			 *
+			 */
+			override bool processMessage(WebRequest request) {
+				request.sendText("sample message");
+				request.flush;
+				return true;
+			}
 		}
 
-		/**
-		 * Implementing the method that process the
-		 * websocket messages
-		 *
-		 */
-		override bool processMessage(WebRequest request) {
-			request.sendText("sample message");
-			request.flush;
-			return true;
-		}
-	}
+		....
 
-	....
-
-	DemoServer myServer = new DemoServer;
-	myServer.start;
+		DemoServer myServer = new DemoServer;
+		myServer.start;
 
 
 2. Using delegates
 	
-	import sws.webServer, sws.webRequest;
+		import sws.webServer, sws.webRequest;
 
-	void main() {
+		void main() {
 
-		//create the HTTP request delegate
-		auto httpDg = delegate(WebRequest request) {
-			request.sendText("Demo page");
-			request.flush;
-			return true;
-		};
+			//create the HTTP request delegate
+			auto httpDg = delegate(WebRequest request) {
+				request.sendText("Demo page");
+				request.flush;
+				return true;
+			};
 
 
-		//create the websocket message delegate
-			auto wsDg = delegate(WebRequest request, string message) {
-			request.send("Demo message");
-			request.flush;
+			//create the websocket message delegate
+				auto wsDg = delegate(WebRequest request, string message) {
+				request.send("Demo message");
+				request.flush;
+				
+				return true;
+			};
+
+			WebServer delegateServer = new WebServer(httpDg, wsDg);
+			delegateServer.setPort(8080);
 			
-			return true;
-		};
-
-		WebServer delegateServer = new WebServer(httpDg, wsDg);
-		delegateServer.setPort(8080);
-		
-		//start the server
-		delegateServer.start();
-	}
+			//start the server
+			delegateServer.start();
+		}
 
 
 Roadmap
