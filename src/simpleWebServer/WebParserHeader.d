@@ -30,17 +30,21 @@ class WebParserHeader : WebParser {
 	 * @return bool true if some parsing was made
 	 */
 	override public bool parse() {
-		if(data.lastIndexOf("\n\n") == -1 && data.lastIndexOf("\r\n\r\n") == -1) {
+		string separator;
+		
+		if(data.indexOf("\n\n") == -1 && data.indexOf("\r\n\r\n") == -1) {
 	    	return false;
     	}
 	     
 	    long lastPos = 0;
 	    long pos = 0;
 	    	
-    	if(data.lastIndexOf("\n\n") > -1) {
-    		lastPos = data.lastIndexOf("\n\n");
+    	if(data.indexOf("\n\n") > -1) {
+    		lastPos = data.indexOf("\n\n");
+    		separator = "\n\n";
 		} else {
-			lastPos = data.lastIndexOf("\r\n\r\n");
+			lastPos = data.indexOf("\r\n\r\n");
+    		separator = "\r\n\r\n";
 		}
 	    
 	    //split headers
@@ -63,7 +67,9 @@ class WebParserHeader : WebParser {
 	    		parsedData[msg[0..pos]] = msg[pos+2..$];
 	    	}
 	    }
-			    
+	   
+	    data = data[lastPos+separator.length-1 .. $];
+	    
 	    return true;
 	}
 }

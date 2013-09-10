@@ -17,10 +17,12 @@ along with DSWS.  If not, see <http://www.gnu.org/licenses/>.
 
 module sws.webClient; 
 
-import sws.webServer, sws.webRequest;
-import sws.webParser, sws.webParserFormData, sws.webParserHeader, sws.webParserMultipart;
+import sws.webServer, sws.webRequest, sws.websocketFrame;
+import sws.webParser, sws.webParserWsFrame, sws.webParserFormData, sws.webParserHeader, sws.webParserMultipart;
+
 import std.socket, core.thread, std.stdio, std.array, std.string, std.conv;
 import std.datetime, std.uuid, std.json, std.uri;
+import std.digest.sha, std.base64;
 
 class WebClient : Thread {
 	
@@ -28,6 +30,7 @@ class WebClient : Thread {
 	WebServer myServer;
 	string data;
 	WebRequest r;
+	WebParser contentParser;
 	
 	/**
 	 * Create the web client object. This object parse the messages from the 
@@ -47,18 +50,16 @@ class WebClient : Thread {
 	 */
 	private void run() { 
 		
-		core.memory.GC.disable();
-		
 		try {
 			long bytesRead;
-		    char buff[1];
+		    char buff[512];
 		    
 		    bool getContent = false; //this is set to true when i want to receive the message content
 		    bool ready = false; //set to true after the message was processed
-		    long maxContent = 0; //set the length of the message
+		    bool isWebsocket = false; // set to true if the current connection is a webbsocket connection
 		    
-		    WebParser contentParser;
 		    WebParserHeader headerParser = new WebParserHeader;
+		    WebParserWsFrame wsParser = new WebParserWsFrame;
 		    
 		    bool parseAtTheEnd;
 		    WebRequest r;
@@ -66,13 +67,25 @@ class WebClient : Thread {
 		    //receive data
 			while ((bytesRead = currSock.receive(buff)) > 0) {
 				string rawData = cast(string) buff[0..bytesRead].idup;
-								
-				if(!getContent) { //if i parse the headers
+				
+				if(isWebsocket) {
+					wsParser.push(rawData);
+					bool ret = wsParser.parse(); //parse the buffer
+					
+					auto messages = wsParser.get();
+
+					foreach(i; 0 .. messages.length) {
+						myServer.processMessage(r, messages[i.to!string]); //send the request to the web server
+					}
+				}
+				
+				if(!getContent && !isWebsocket) { //if i parse the headers
 					headerParser.push(rawData);
 					bool ret = headerParser.parse(); //parse the buffer
 					
+					rawData = headerParser.leftBehind();
+					
 					if(ret) {
-						rawData = "";
 						string[string] header = headerParser.get();
 						//split first header
 					    auto head = header[""].split(" ");
@@ -109,84 +122,31 @@ class WebClient : Thread {
 								    
 					    //parse Cookies
 						if("Cookie" in r.requestHeader) {
-							auto cookieList = r.requestHeader["Cookie"].split("; ");
-						
-							foreach(i ; 0 .. cookieList.length) { 
-								string msg = to!string(cookieList[i]);
-						    	
-						    	pos = msg.indexOf("=");
-						    	
-						    	if(pos != -1) {
-						    		r.cookie[msg[0..pos]] = msg[pos+1..$];
-						    	}
-							}
+							r.cookie = parseVarList(r.requestHeader["Cookie"]);
 						}
 					
 						//check if the message have a body
-						if("Content-Length" in r.requestHeader) { 
-							//if the message have content start to receive the message
-							maxContent = to!long(r.requestHeader["Content-Length"]) + 1;
-							getContent = true;
-							ready = false;
-							
-							//determine the content type
-							if("Content-Type" in r.requestHeader) {
-								if(r.requestHeader["Content-Type"].indexOf("application/x-www-form-urlencoded") != -1) {
-									contentParser = new WebParserFormData();
-									parseAtTheEnd = true;
-								}
-								
-								if(r.requestHeader["Content-Type"].indexOf("multipart/form-data") != -1) {
-									contentParser = new WebParserMultipart();
-									
-									auto options = r.requestHeader["Content-Type"].split("; ");
-									foreach( i ; 0 .. options.length) {
-										string msg = options[i];
-										
-										if(msg.indexOf("=") != -1) {
-											auto val = msg.split("=");
-											contentParser.settings[to!string(val[0])] = to!string(val[1]);
-										}
-									}
-									
-									contentParser.settings["path"] = r.server.getTempFilePath;
-											
-									parseAtTheEnd = true;
-								}
-							}
-						} else {
-							ready = true; //the request is done
-						}
-					}
-				}
-				
-				if(getContent) { //receive the message content
-					maxContent--;
-					contentParser.push(rawData);
-					
-					if(!parseAtTheEnd) {
-						contentParser.parse();
-					}
-					
-					if(maxContent == 0) {
-						contentParser.parse();
-						
-						r.post = contentParser.get();
-						
-						foreach( i ; 0 .. contentParser.files.length ) {
-							r.files[contentParser.files[i]] = contentParser.files[i];
+						if("Content-Length" in r.requestHeader) {
+							parseContent(r, rawData);
 						}
 						
-						//reset the values
-						data = ""; //clear the buffer
-						getContent = false; 
 						ready = true; //the request is done
 					}
 				}
 				
 				if(ready) {
-					myServer.processRequest(r); //send the request to the web server
-					ready = false; //start a new request
+					//process the request
+					isWebsocket = processConnection(r);
+					
+					if(isWebsocket) {
+						getContent = false;
+					} else {
+						if("Connection" !in r.requestHeader || ("Connection" in r.requestHeader && r.requestHeader["Connection"] == "close")) {
+							r.headers["Connection"] = "close";
+						}
+					}
+					
+					ready = false;
 					
 					//remove files 
 					if(contentParser !is null) {
@@ -201,7 +161,13 @@ class WebClient : Thread {
 					
 					//stop receive messages from the client
 					if("Connection" in r.headers && r.headers["Connection"] == "close") {
-	 					break;
+						break;
+					} else {
+						getContent = false; //this is set to true when i want to receive the message content
+					    ready = false; //set to true after the message was processed
+					    
+					    headerParser = new WebParserHeader;
+					    wsParser = new WebParserWsFrame;
 					}
 				}
 			}
@@ -209,11 +175,134 @@ class WebClient : Thread {
 			//close the connection
 			currSock.close;
 		} catch(Exception e) {
-			writeln(e);
+			writeln(e); 
 			stdout.flush;
+			currSock.close;
 		} 
 		
-		core.memory.GC.enable();
 		r = null;
 	} 
+	
+	private void parseContent(WebRequest r, string rawData) {
+		
+		//if the message have content start to receive the message
+		long maxContent = to!long(r.requestHeader["Content-Length"]) + 1;
+		bool parseAtTheEnd;
+		
+		//determine the content type
+		if("Content-Type" in r.requestHeader) {
+			if(r.requestHeader["Content-Type"].indexOf("application/x-www-form-urlencoded") != -1) {
+				contentParser = new WebParserFormData();
+				parseAtTheEnd = true;
+			}
+			
+			if(r.requestHeader["Content-Type"].indexOf("multipart/form-data") != -1) {
+				contentParser = new WebParserMultipart();
+				
+				auto options = r.requestHeader["Content-Type"].split("; ");
+				foreach( i ; 0 .. options.length) {
+					string msg = options[i];
+					
+					if(msg.indexOf("=") != -1) {
+						auto val = msg.split("=");
+						contentParser.settings[to!string(val[0])] = to!string(val[1]);
+					}
+				}
+				
+				contentParser.settings["path"] = r.server.getTempFilePath;
+						
+				parseAtTheEnd = false;
+			}
+		}
+		
+		//receive the message content
+		long bytesRead;
+		char buff[1024];
+		
+		while ((bytesRead = currSock.receive(buff)) > 0) {
+			rawData ~= cast(string) buff[0..bytesRead].idup;
+			
+			maxContent -= rawData.length;
+			
+			contentParser.push(rawData);
+			if(!parseAtTheEnd) {
+				contentParser.parse();
+			}
+			
+			if(maxContent <= 0) {
+				contentParser.parse();
+				
+				r.post = contentParser.get();
+				
+				foreach( i ; 0 .. contentParser.files.length ) {
+					r.files[contentParser.files[i]] = contentParser.files[i];
+				}
+				
+				break; //break the loop
+			}
+			
+			rawData = "";
+		}
+		
+		stdout.flush;
+	}
+	
+	/**
+		Parse a string with variables (var1=val1; var2=val2)
+	*/
+	private string[string] parseVarList(string list) {
+		string[string] varList;
+		
+		auto cookieList = list.split("; ");
+						
+		foreach(i ; 0 .. cookieList.length) { 
+			string msg = to!string(cookieList[i]);
+	    	
+	    	auto pos = msg.indexOf("=");
+	    	
+	    	if(pos != -1) {
+	    		varList[msg[0..pos]] = msg[pos+1..$];
+	    	}
+		}
+
+		return varList;
+	}
+	
+	/**
+		Process a request
+	
+		returns: 
+			true if is websocket 
+			false if is http request
+	*/
+	private bool processConnection(WebRequest r) {
+		
+		//check if is websocket
+		if("Upgrade" in r.requestHeader && r.requestHeader["Upgrade"] == "websocket") {
+			//start the web socket
+			
+			r.statusCode = 101;
+			
+			auto key = strip(r.requestHeader["Sec-WebSocket-Key"]) ~ "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+			
+			auto sha1 = new SHA1;
+	        sha1.put(cast(ubyte[]) key);
+	        auto secretCode = to!string(Base64.encode(sha1.finish()));
+			 
+			r.headers = [
+				"Upgrade": "websocket",
+				"Connection": "Upgrade",
+				"Sec-WebSocket-Accept": secretCode
+			];
+			 
+			r.flush();
+			
+			r.websocket = true;
+			return true;
+		} else {
+			myServer.processRequest(r); //send the request to the web server
+		}
+		
+		return false;
+	}
 }

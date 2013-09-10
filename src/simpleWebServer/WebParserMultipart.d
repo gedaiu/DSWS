@@ -63,13 +63,11 @@ class WebParserMultipart : WebParser {
  		string oldData = "";
  		
  		while(data != oldData) {
- 			oldData = data;
- 				 		
+ 			oldData = data;	 		
  			//search for boundary
  			if(data.indexOf(boundary) > -1) {
  				//if we found the boundary, we start a new variable
  				auto boundaryPos = data.indexOf(boundary);
- 				
  				parseVariable(data[0 .. boundaryPos]);
  				
  				//remove all the data before the boundary and the boundary itself from the buffer
@@ -104,12 +102,8 @@ class WebParserMultipart : WebParser {
 	 					data = data[ret..$];
  					}
  				} 
- 				
- 				return false;
 			}
  		}
- 		
- 		stdout.flush;
  		
 		return true;
 	}
@@ -179,13 +173,21 @@ class WebParserMultipart : WebParser {
 		    			getContent = true;
 		    			
 		    			if("filename" in disposition) {
-		    				isFile = true;
-		    				isVariable = false;
+		    				if(disposition["filename"] != "") {
+			    				isFile = true;
+			    				isVariable = false; 
+			    				
+			    				string file = settings["path"] ~ disposition["filename"];
+			    				f = new File(file, "w");
+			    				
+			    				files ~= [file];
+	    					} else {
+			    				isFile = false;
+			    				isVariable = true;
+    						}
 		    				
-		    				string file = settings["path"] ~ disposition["filename"];
-		    				f = new File(file, "w");
 		    				parsedData[disposition["name"]] = disposition["filename"];
-		    				files ~= [file];
+		    				
 		    			} else {
 		    				parsedData[disposition["name"]] = "";
 		    				isFile = false;

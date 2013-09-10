@@ -23,12 +23,15 @@ import sws.webServer, sws.webRequest;
 void main() { 
 	
 	//create the webserver with delegates
-	auto httpDg = delegate(WebRequest request) {
+	
+	auto dg = delegate(WebRequest request) {
 		//find path
 		auto path = dirName(__FILE__);
 		
 		//get file
-		auto data = cast(string) read(buildPath(path, "html/ws.html"), 5000);
+		auto data = cast(string) read(buildPath(path, "html/post.html"), 5000);
+		
+		data = data.replace("[result]", request.post.to!string);
 		
 		request.sendText(data);
 		request.flush;
@@ -36,15 +39,7 @@ void main() {
 		return true;
 	};
 	
-	//create the webserver with delegates
-	auto wsDg = delegate(WebRequest request, string message) {
-		request.send(message);
-		request.flush;
-		
-		return true;
-	};
-	
-	WebServer delegateServer = new WebServer(httpDg, wsDg);
+	WebServer delegateServer = new WebServer(dg);
 	delegateServer.setPort(8080);
 	
 	//start the server

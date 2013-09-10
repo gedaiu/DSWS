@@ -37,7 +37,7 @@ class DemoServer : WebServer {
 		return true;
 	}
 }
-/*
+
 void main() { 
 	
 	//create the webserver with delegates
@@ -61,4 +61,4 @@ void main() {
 	readln;
 	myServer.stop();
 	writeln("Done!!!");
-}      */
+}      

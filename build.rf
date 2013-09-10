@@ -3,12 +3,13 @@
 
 -I"src"
 
-"src/example/demo.d"
 "src/example/main.d"
 "src/simpleWebServer/WebClient.d"
 "src/simpleWebServer/WebParser.d"
 "src/simpleWebServer/WebParserFormData.d"
 "src/simpleWebServer/WebParserHeader.d"
 "src/simpleWebServer/WebParserMultipart.d"
+"src/simpleWebServer/WebParserWsFrame.d"
 "src/simpleWebServer/WebRequest.d"
 "src/simpleWebServer/WebServer.d"
+"src/simpleWebServer/WebsocketFrame.d"

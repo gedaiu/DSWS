@@ -61,4 +61,11 @@ class WebParser {
 		return parsedData;
 	}
 	
+	/**
+	 * Return the unparsed buffer 
+	 */
+	public string leftBehind() {
+		return data;
+	}
+	
 }

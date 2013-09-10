@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset=utf-8>
+<meta name="viewport" content="width=620">
+<title>chat</title>
+<body>
+
+	<pre id="result"></pre>
+	<input type="text" onkeypress="sendMessage(event, this)"/>
+
+	<script>
+	
+	
+		var socket = new WebSocket("ws://127.0.0.1:8080");        				//create the websocket
+		
+		window.wsConnection = socket; //save the websocket
+		
+		/**
+		 * When the client is connected close the loading modal and triger
+		 * the open event
+		 */
+		socket.onopen = function() {  
+			console.log("OPEN");
+			socket.send("Hello world!");
+		};
+		
+		/**
+		 * When data arrives from server
+		 * trigger the action event
+		 */
+		socket.onmessage = function(msg) { 
+			var elm = document.getElementById("result");
+			elm.innerHTML += msg.data + "\n";
+			
+			console.log(msg);
+		};
+		
+		/**
+		 * When the connection is closed show the loading modal 
+		 */
+		socket.onclose = function() {
+			console.log("CLOSED");
+		};		    
+		
+		function sendMessage(event, t) {
+			if(event.keyCode == 13) {
+				window.wsConnection.send(t.value);7
+				t.value = "";
+			}
+		}
+	
+	</script>
+</body>
+</html>

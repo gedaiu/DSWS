@@ -20,7 +20,7 @@ module sws.webRequest;
 import std.c.stdlib: malloc, free;
 
 import std.socket;
-import sws.webServer;
+import sws.webServer, sws.websocketFrame;
 import std.variant;
 import std.conv, std.stdio, std.file, std.string, std.path, std.array, std.regex, std.datetime;
 
@@ -40,13 +40,15 @@ class WebRequest {
 	public string[string] headers;
 	public Variant[string][string] data;
 	
+	public bool websocket;
+	
 	private string file;
 	
 	private string uid;
 	
 	private string url;
 	
-	int status_code = 200;
+	public int statusCode = 200;
 	private string status_message[int];
 	private string mime[string];
 	
@@ -70,6 +72,7 @@ class WebRequest {
 		this.uid = uid;
 		this.url = url;
 		this.file = "";
+		this.websocket = false;
 		
 		//init response headers
 		headers["Content-Type"] = "text/html; charset=UTF-8";
@@ -391,7 +394,7 @@ class WebRequest {
 		headers["Content-Type"] = "text/html; charset=UTF-8";
 		
 		file = "";
-		status_code = err;
+		statusCode = err;
 	}
 	
 	/**
@@ -400,22 +403,43 @@ class WebRequest {
 	 * @return int
 	 */
 	int getResponseCode() {
-		return status_code;
+		return statusCode;
 	}
 	
 	/**
 	 * Flush data to the client
 	 */
 	public bool flush() {
-		//create the response
-		if(status_code !in status_message) {
-			status_message[status_code] = "Extension";
+		if(websocket) {
+			return flushWs;
+		} else {
+			return flushHttp;
 		}
 		
-		string response = "HTTP/1.1 " ~ to!string(status_code) ~ " " ~ status_message[status_code] ~ "\r\n";
+		return false;
+	}
+	
+	private bool flushWs() {
+		WebsocketFrame wsFrame = new WebsocketFrame;
+		wsFrame.haveMask = false;
+		wsFrame.mask = [1, 2, 3, 4];
+		wsFrame.opcode = 1;
+		wsFrame.payloadData = responseData;
+		
+		mySocket.send(wsFrame.encode);
+		responseData = "";
+		return true;
+	}
+	
+	private bool flushHttp() {
+		//create the response
+		if(statusCode !in status_message) {
+			status_message[statusCode] = "Extension";
+		}
+		
+		string response = "HTTP/1.1 " ~ to!string(statusCode) ~ " " ~ status_message[statusCode] ~ "\r\n";
 		
 		headers["Server"] = "CMServer/0.1 (Linux)";
-		headers["Connection"] = "close";
 		
 		if(file != "") {
 			auto ext = to!string(extension(file));
@@ -467,10 +491,11 @@ class WebRequest {
 		} else {
 			mySocket.send("Content-Length: " ~ to!string(responseData.length) ~ "\r\n");
 			mySocket.send("\r\n");
-		
+			
 			mySocket.send(responseData);
 		}
 		
+		responseData = "";
   		return true;
 	}
 	

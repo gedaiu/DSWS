@@ -39,7 +39,8 @@ class WebServer : Thread {
 	protected ushort port;
 	public bool listening;
 	
-	protected bool delegate(WebRequest request) pRequest = null;
+	protected bool delegate(WebRequest request) httpDg = null;
+	protected bool delegate(WebRequest request, string message) wsDg = null;
 	
 	this() { 
 		setPort(80);
@@ -47,9 +48,10 @@ class WebServer : Thread {
 		super(&run);
 	}
 	
-	this(bool delegate(WebRequest request) dg) {
+	this(bool delegate(WebRequest request) httpDg, bool delegate(WebRequest request, string message) wsDg = null) {
 		this();
-		pRequest = dg;
+		this.httpDg = httpDg;
+		this.wsDg = wsDg;
 	} 
 	
 	/**
@@ -59,8 +61,22 @@ class WebServer : Thread {
 	 */
 	public bool processRequest(WebRequest request) {
 		
-		if(pRequest !is null) {
-			return pRequest(request);
+		if(httpDg !is null) {
+			return httpDg(request);
+		} 
+		
+		return false;
+	}
+	
+	/**
+	 * Proces a message via websockets
+	 * 
+	 * @return bool return true if the process is a success 
+	 */
+	public bool processMessage(WebRequest request, string message) {
+		
+		if(wsDg !is null) {
+			return wsDg(request, message); 
 		} 
 		
 		return false;
